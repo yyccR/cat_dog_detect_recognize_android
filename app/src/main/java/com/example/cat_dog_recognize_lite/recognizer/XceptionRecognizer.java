@@ -46,7 +46,7 @@ public class XceptionRecognizer {
     private final int[] OUTPUT_SIZE = new int[]{1, 200};
     private final Boolean IS_INT8 = false;
     private final float THRESHOLD = 0.25f;
-    private final String LABEL_FILE = "cat_dog_breeds.txt";
+    private final String LABEL_FILE = "cat_dog_breeds_cn.txt";
     private String MODEL_FILE = "cat_dog_classify_xception_0322_fp16.tflite";
 
     private Interpreter tflite;
