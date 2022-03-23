@@ -33,7 +33,8 @@ public class MainActivity extends AppCompatActivity {
     private PreviewView cameraPreviewMatch;
     private PreviewView cameraPreviewWrap;
     private ImageView boxLabelCanvas;
-    private Spinner modelSpinner;
+    private Spinner detectorModelSpinner;
+    private Spinner recognizerModelSpinner;
     private Switch immersive;
     private TextView inferenceTimeTextView;
     private TextView frameSizeTextView;
@@ -84,10 +85,11 @@ public class MainActivity extends AppCompatActivity {
      * 加载模型
      *
      */
-    private void initRecognizeModel() {
+    private void initRecognizeModel(String name) {
         // 加载模型
         try {
             this.xceptionRecognizer = new XceptionRecognizer();
+            this.xceptionRecognizer.setModelFile(name);
 //            this.yolov5TFLiteDetector.addThread(3);
 //            this.yolov5TFLiteDetector.addNNApiDelegate();
             this.xceptionRecognizer.addGPUDelegate();
@@ -120,7 +122,8 @@ public class MainActivity extends AppCompatActivity {
         boxLabelCanvas = findViewById(R.id.box_label_canvas);
 
         // 下拉按钮
-        modelSpinner = findViewById(R.id.model);
+        detectorModelSpinner = findViewById(R.id.detector);
+        recognizerModelSpinner = findViewById(R.id.recognizer);
 
         // 沉浸式体验按钮
         immersive = findViewById(R.id.immersive);
@@ -142,12 +145,12 @@ public class MainActivity extends AppCompatActivity {
         cameraProcess.showCameraSupportSize(MainActivity.this);
 
         // 初始化加载yolov5s
-        initDetectModel("yolov5s");
+//        initDetectModel("yolov5s");
         // 初始化Xception
-        initRecognizeModel();
+//        initRecognizeModel("xception int8");
 
-        // 监听模型切换按钮
-        modelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        // 监听检测模型切换按钮
+        detectorModelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 String model = (String) adapterView.getItemAtPosition(i);
@@ -176,14 +179,51 @@ public class MainActivity extends AppCompatActivity {
                             xceptionRecognizer);
                     cameraProcess.startCamera(MainActivity.this, fullImageAnalyse, cameraPreviewWrap);
                 }
-
-
             }
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
 
             }
         });
+
+        // 监听识别模型切换按钮
+        recognizerModelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String model = (String) parent.getItemAtPosition(position);
+                Toast.makeText(MainActivity.this, "loading model: " + model, Toast.LENGTH_SHORT).show();
+                initRecognizeModel(model);
+                if(IS_FULL_SCREEN){
+                    cameraPreviewWrap.removeAllViews();
+                    FullScreenAnalyse fullScreenAnalyse = new FullScreenAnalyse(MainActivity.this,
+                            cameraPreviewMatch,
+                            boxLabelCanvas,
+                            rotation,
+                            inferenceTimeTextView,
+                            frameSizeTextView,
+                            yolov5TFLiteDetector);
+                    cameraProcess.startCamera(MainActivity.this, fullScreenAnalyse, cameraPreviewMatch);
+                }else{
+                    cameraPreviewMatch.removeAllViews();
+                    FullImageAnalyse fullImageAnalyse = new FullImageAnalyse(
+                            MainActivity.this,
+                            cameraPreviewWrap,
+                            boxLabelCanvas,
+                            rotation,
+                            inferenceTimeTextView,
+                            frameSizeTextView,
+                            yolov5TFLiteDetector,
+                            xceptionRecognizer);
+                    cameraProcess.startCamera(MainActivity.this, fullImageAnalyse, cameraPreviewWrap);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
 
         // 监听视图变化按钮
         immersive.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {

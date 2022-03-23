@@ -1,9 +1,14 @@
 <resources>
     <string name="app_name">cat_dog_recognize_lite</string>
 
-    <string-array name="model">
+    <string-array name="detector">
         <item>yolov5s</item>
         <item>yolov5n </item>
         <item>yolov5m</item>
+    </string-array>
+
+    <string-array name="recognizer">
+        <item>xception fp16</item>
+        <item>xception int8</item>
     </string-array>
 </resources>

@@ -17,16 +17,19 @@ import org.tensorflow.lite.gpu.GpuDelegate;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
 import org.tensorflow.lite.support.common.FileUtil;
 import org.tensorflow.lite.support.common.ops.NormalizeOp;
+import org.tensorflow.lite.support.common.ops.QuantizeOp;
 import org.tensorflow.lite.support.image.ImageProcessor;
 import org.tensorflow.lite.support.image.TensorImage;
 import org.tensorflow.lite.support.image.ops.ResizeOp;
 import org.tensorflow.lite.support.label.TensorLabel;
+import org.tensorflow.lite.support.metadata.MetadataExtractor;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PrimitiveIterator;
 
 public class XceptionRecognizer {
 
@@ -44,25 +47,52 @@ public class XceptionRecognizer {
 
     private final Size INPNUT_SIZE = new Size(224, 224);
     private final int[] OUTPUT_SIZE = new int[]{1, 200};
-    private final Boolean IS_INT8 = false;
+    private Boolean IS_INT8 = false;
     private final float THRESHOLD = 0.25f;
-    private final String LABEL_FILE = "cat_dog_breeds_cn.txt";
-    private String MODEL_FILE = "cat_dog_classify_xception_0322_fp16.tflite";
+    ImageProcess imageProcess = new ImageProcess();
 
+    private final String LABEL_FILE = "cat_dog_breeds_cn.txt";
+    private String FP16_MODEL_FILE = "cat_dog_classify_xception_0322_fp16.tflite";
+    private String INT8_MODEL_FILE = "cat_dog_classify_xception_0322_int8.tflite";
+    private String MODEL_FILE;
+
+    // 如果替换自己的int8 quant模型, 需要修改input/output Tensor的索引
+    private int QUANT_MODEL_INPUT_TENSOR_INDEX = 231;
+    private int QUANT_MODEL_OUTPUT_TENSOR_INDEX = 232;
+    MetadataExtractor.QuantizationParams inputQuantParams;
+    MetadataExtractor.QuantizationParams outputQuantParams;
     private Interpreter tflite;
+    private MetadataExtractor tfliteMeta;
     private List<String> associatedAxisLabels;
     Interpreter.Options options = new Interpreter.Options();
 
-    ImageProcess imageProcess = new ImageProcess();
 
     public String getLabelFile() {
         return this.LABEL_FILE;
     }
-
     public Size getInputSize(){return this.INPNUT_SIZE;}
     public int[] getOutputSize(){return this.OUTPUT_SIZE;}
     public String getModelFile() {
         return this.MODEL_FILE;
+    }
+
+    /**
+     *
+     * @param modelFile
+     */
+    public void setModelFile(String modelFile){
+        switch (modelFile) {
+            case "xception fp16":
+                IS_INT8 = false;
+                MODEL_FILE = FP16_MODEL_FILE;
+                break;
+            case "xception int8":
+                MODEL_FILE = INT8_MODEL_FILE;
+                IS_INT8 = true;
+                break;
+            default:
+                Log.i("tfliteSupport", "Only XceptionFp16/XceptionInt8 can be load!");
+        }
     }
 
     /**
@@ -76,6 +106,11 @@ public class XceptionRecognizer {
 
             ByteBuffer tfliteModel = FileUtil.loadMappedFile(activity, MODEL_FILE);
             tflite = new Interpreter(tfliteModel, options);
+            if(IS_INT8){
+                MetadataExtractor tfliteMeta = new MetadataExtractor(tfliteModel);
+                inputQuantParams = tfliteMeta.getInputTensorQuantizationParams(QUANT_MODEL_INPUT_TENSOR_INDEX);
+                outputQuantParams = tfliteMeta.getInputTensorQuantizationParams(QUANT_MODEL_OUTPUT_TENSOR_INDEX);
+            }
             Log.i("tfliteSupport", "Success reading model: " + MODEL_FILE);
 
             associatedAxisLabels = FileUtil.loadLabels(activity, LABEL_FILE);
@@ -96,19 +131,36 @@ public class XceptionRecognizer {
     public LabelInfo recognize(Bitmap bitmap) {
 
         // xception-tflite的输入是:[1, 224, 224,3]
-        ImageProcessor imageProcessor =
-                new ImageProcessor.Builder()
-                        .add(new ResizeOp(INPNUT_SIZE.getHeight(), INPNUT_SIZE.getWidth(), ResizeOp.ResizeMethod.BILINEAR))
-                        .add(new NormalizeOp(0, 255))
-                        .build();
-        TensorImage xceptionTfliteInput = new TensorImage(DataType.FLOAT32);
+        ImageProcessor imageProcessor;
+        TensorImage xceptionTfliteInput;
+        if(IS_INT8){
+            imageProcessor =
+                    new ImageProcessor.Builder()
+                            .add(new ResizeOp(INPNUT_SIZE.getHeight(), INPNUT_SIZE.getWidth(), ResizeOp.ResizeMethod.BILINEAR))
+                            .add(new NormalizeOp(0, 255))
+                            .add(new QuantizeOp(inputQuantParams.getZeroPoint(), inputQuantParams.getScale()))
+                            .build();
+            xceptionTfliteInput = new TensorImage(DataType.UINT8);
+        } else {
+            imageProcessor =
+                    new ImageProcessor.Builder()
+                            .add(new ResizeOp(INPNUT_SIZE.getHeight(), INPNUT_SIZE.getWidth(), ResizeOp.ResizeMethod.BILINEAR))
+                            .add(new NormalizeOp(0, 255))
+                            .build();
+            xceptionTfliteInput = new TensorImage(DataType.FLOAT32);
+        }
         xceptionTfliteInput.load(bitmap);
         xceptionTfliteInput = imageProcessor.process(xceptionTfliteInput);
 
 
         // xception-tflite的输出是:[1, 200], 可以从v5的GitHub release处找到相关tflite模型, 输出是[0,1], 处理到320.
-        TensorBuffer probabilityBuffer =
-                TensorBuffer.createFixedSize(OUTPUT_SIZE, DataType.FLOAT32);
+        TensorBuffer probabilityBuffer;
+        if(IS_INT8){
+            probabilityBuffer = TensorBuffer.createFixedSize(OUTPUT_SIZE, DataType.UINT8);
+        }else{
+            probabilityBuffer = TensorBuffer.createFixedSize(OUTPUT_SIZE, DataType.FLOAT32);
+        }
+
 
         // 推理计算
         if (null != tflite) {
@@ -147,8 +199,6 @@ public class XceptionRecognizer {
                 int ymin = (int) r.getLocation().top;
                 int xmax = (int) r.getLocation().right;
                 int ymax = (int) r.getLocation().bottom;
-
-
 
                 Matrix fullScreenTransform = imageProcess.getTransformationMatrix(
                         xmax - xmin, ymax - ymin,

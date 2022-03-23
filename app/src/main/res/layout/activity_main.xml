@@ -54,7 +54,7 @@
             android:layout_height="wrap_content"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginEnd="5dp"
+            android:layout_marginEnd="10dp"
             android:layout_marginBottom="20dp"
             android:text="xx ms"
             android:textColor="#FFFFFF" />
@@ -76,7 +76,7 @@
             android:layout_height="wrap_content"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintBottom_toTopOf="@id/inference_time"
-            android:layout_marginEnd="5dp"
+            android:layout_marginEnd="10dp"
             android:layout_marginBottom="5dp"
             android:text="heigth x width"
             android:textColor="#FFFFFF" />
@@ -106,7 +106,7 @@
             tools:ignore="UseSwitchCompatOrMaterialXml" />
 
         <TextView
-            android:id="@+id/model_name"
+            android:id="@+id/detector_model_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintBottom_toTopOf="@id/immersive_name"
@@ -114,16 +114,41 @@
             android:layout_marginStart="5dp"
             android:layout_marginBottom="5dp"
             android:textColor="#FFFFFF"
-            android:text="model: " />
+            android:text="detector: " />
 
         <Spinner
-            android:id="@+id/model"
+            android:id="@+id/detector"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintBottom_toTopOf="@id/immersive"
+            app:layout_constraintBottom_toBottomOf="@id/detector_model_name"
             app:layout_constraintRight_toRightOf="parent"
             android:background="#00000000"
-            android:entries="@array/model"
+            android:entries="@array/detector"
+            android:padding="0dp"
+            android:gravity="right"
+            android:layout_marginEnd="5dp"
+            android:layout_marginBottom="5dp" />
+
+        <TextView
+            android:id="@+id/recognizer_model_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toTopOf="@id/detector_model_name"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginStart="5dp"
+            android:layout_marginBottom="5dp"
+            android:textColor="#FFFFFF"
+            android:text="recognizer: " />
+
+        <Spinner
+            android:id="@+id/recognizer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="@id/recognizer_model_name"
+            app:layout_constraintRight_toRightOf="parent"
+            android:background="#00000000"
+            android:entries="@array/recognizer"
+            android:dropDownVerticalOffset="50dp"
             android:padding="0dp"
             android:gravity="right"
             android:layout_marginEnd="5dp"
@@ -133,7 +158,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
-            app:layout_constraintBottom_toTopOf="@id/model_name"
+            app:layout_constraintBottom_toTopOf="@id/recognizer_model_name"
             app:layout_constraintLeft_toLeftOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
