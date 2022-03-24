@@ -106,10 +106,36 @@
             tools:ignore="UseSwitchCompatOrMaterialXml" />
 
         <TextView
-            android:id="@+id/detector_model_name"
+            android:id="@+id/recognizer_model_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintBottom_toTopOf="@id/immersive_name"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginStart="5dp"
+            android:layout_marginBottom="5dp"
+            android:textColor="#FFFFFF"
+            android:text="recognizer: " />
+
+        <Spinner
+            android:id="@+id/recognizer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="@id/recognizer_model_name"
+            app:layout_constraintRight_toRightOf="parent"
+            android:background="#00000000"
+            android:entries="@array/recognizer"
+            android:padding="0dp"
+            android:dropDownVerticalOffset="20dp"
+            android:gravity="right"
+            android:layout_marginEnd="5dp"
+            android:layout_marginBottom="5dp" />
+
+
+        <TextView
+            android:id="@+id/detector_model_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toTopOf="@id/recognizer_model_name"
             app:layout_constraintLeft_toLeftOf="parent"
             android:layout_marginStart="5dp"
             android:layout_marginBottom="5dp"
@@ -129,30 +155,6 @@
             android:layout_marginEnd="5dp"
             android:layout_marginBottom="5dp" />
 
-        <TextView
-            android:id="@+id/recognizer_model_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toTopOf="@id/detector_model_name"
-            app:layout_constraintLeft_toLeftOf="parent"
-            android:layout_marginStart="5dp"
-            android:layout_marginBottom="5dp"
-            android:textColor="#FFFFFF"
-            android:text="recognizer: " />
-
-        <Spinner
-            android:id="@+id/recognizer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="@id/recognizer_model_name"
-            app:layout_constraintRight_toRightOf="parent"
-            android:background="#00000000"
-            android:entries="@array/recognizer"
-            android:dropDownVerticalOffset="50dp"
-            android:padding="0dp"
-            android:gravity="right"
-            android:layout_marginEnd="5dp"
-            android:layout_marginBottom="5dp" />
 
         <TextView
             android:layout_width="wrap_content"

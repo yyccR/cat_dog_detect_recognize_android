@@ -8,6 +8,8 @@ import android.util.Log;
 import android.util.Size;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+
 import com.example.cat_dog_recognize_lite.utils.ImageProcess;
 import com.example.cat_dog_recognize_lite.utils.Recognition;
 
@@ -16,12 +18,12 @@ import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.GpuDelegate;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
 import org.tensorflow.lite.support.common.FileUtil;
+import org.tensorflow.lite.support.common.ops.CastOp;
 import org.tensorflow.lite.support.common.ops.NormalizeOp;
 import org.tensorflow.lite.support.common.ops.QuantizeOp;
 import org.tensorflow.lite.support.image.ImageProcessor;
 import org.tensorflow.lite.support.image.TensorImage;
 import org.tensorflow.lite.support.image.ops.ResizeOp;
-import org.tensorflow.lite.support.label.TensorLabel;
 import org.tensorflow.lite.support.metadata.MetadataExtractor;
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer;
 
@@ -57,12 +59,12 @@ public class XceptionRecognizer {
     private String MODEL_FILE;
 
     // 如果替换自己的int8 quant模型, 需要修改input/output Tensor的索引
-    private int QUANT_MODEL_INPUT_TENSOR_INDEX = 231;
-    private int QUANT_MODEL_OUTPUT_TENSOR_INDEX = 232;
-    MetadataExtractor.QuantizationParams inputQuantParams;
-    MetadataExtractor.QuantizationParams outputQuantParams;
+//    private int QUANT_MODEL_INPUT_TENSOR_INDEX = 231;
+//    private int QUANT_MODEL_OUTPUT_TENSOR_INDEX = 232;
+    MetadataExtractor.QuantizationParams inputQuantParams = new MetadataExtractor.QuantizationParams(0.00392157f, 0);
+    MetadataExtractor.QuantizationParams outputQuantParams = new MetadataExtractor.QuantizationParams(0.00390625f, 0);
     private Interpreter tflite;
-    private MetadataExtractor tfliteMeta;
+//    private MetadataExtractor tfliteMeta;
     private List<String> associatedAxisLabels;
     Interpreter.Options options = new Interpreter.Options();
 
@@ -87,8 +89,8 @@ public class XceptionRecognizer {
                 MODEL_FILE = FP16_MODEL_FILE;
                 break;
             case "xception int8":
-                MODEL_FILE = INT8_MODEL_FILE;
                 IS_INT8 = true;
+                MODEL_FILE = INT8_MODEL_FILE;
                 break;
             default:
                 Log.i("tfliteSupport", "Only XceptionFp16/XceptionInt8 can be load!");
@@ -106,11 +108,13 @@ public class XceptionRecognizer {
 
             ByteBuffer tfliteModel = FileUtil.loadMappedFile(activity, MODEL_FILE);
             tflite = new Interpreter(tfliteModel, options);
-            if(IS_INT8){
-                MetadataExtractor tfliteMeta = new MetadataExtractor(tfliteModel);
-                inputQuantParams = tfliteMeta.getInputTensorQuantizationParams(QUANT_MODEL_INPUT_TENSOR_INDEX);
-                outputQuantParams = tfliteMeta.getInputTensorQuantizationParams(QUANT_MODEL_OUTPUT_TENSOR_INDEX);
-            }
+//            if(IS_INT8){
+//                tfliteMeta = new MetadataExtractor(tfliteModel);
+
+//                inputQuantParams = tfliteMeta.getInputTensorQuantizationParams(QUANT_MODEL_INPUT_TENSOR_INDEX);
+//                outputQuantParams = tfliteMeta.getInputTensorQuantizationParams(QUANT_MODEL_OUTPUT_TENSOR_INDEX);
+//                Log.i("tfliteSupport", "meta "+inputQuantParams.getScale());
+//            }
             Log.i("tfliteSupport", "Success reading model: " + MODEL_FILE);
 
             associatedAxisLabels = FileUtil.loadLabels(activity, LABEL_FILE);
@@ -139,6 +143,7 @@ public class XceptionRecognizer {
                             .add(new ResizeOp(INPNUT_SIZE.getHeight(), INPNUT_SIZE.getWidth(), ResizeOp.ResizeMethod.BILINEAR))
                             .add(new NormalizeOp(0, 255))
                             .add(new QuantizeOp(inputQuantParams.getZeroPoint(), inputQuantParams.getScale()))
+                            .add(new CastOp(DataType.UINT8))
                             .build();
             xceptionTfliteInput = new TensorImage(DataType.UINT8);
         } else {
@@ -149,6 +154,9 @@ public class XceptionRecognizer {
                             .build();
             xceptionTfliteInput = new TensorImage(DataType.FLOAT32);
         }
+        // 这里看源码, 实际上load bitmap的时候,只是在类内部创建了个bitmap的容器, 这个容器数据类型跟外面传进去的bitmap类型还是一样的
+        // 只有当input调用getBuffer, 才会把bitmap容器里面的数据转成对应格式的数据, 所以这里load的bitmap依旧是float格式没问题
+        // 这样我们在下面process再把他处理成uint8就行
         xceptionTfliteInput.load(bitmap);
         xceptionTfliteInput = imageProcessor.process(xceptionTfliteInput);
 
@@ -160,7 +168,6 @@ public class XceptionRecognizer {
         }else{
             probabilityBuffer = TensorBuffer.createFixedSize(OUTPUT_SIZE, DataType.FLOAT32);
         }
-
 
         // 推理计算
         if (null != tflite) {
@@ -180,7 +187,6 @@ public class XceptionRecognizer {
                 labelId = j;
             }
         }
-        Log.i("recognize", "label id: "+labelId+" label name: "+associatedAxisLabels.toString() + " label score: "+maxLabelScores);
         return new LabelInfo(labelId, associatedAxisLabels.get(labelId), maxLabelScores);
     }
 
@@ -212,13 +218,19 @@ public class XceptionRecognizer {
                         fullScreenTransform, false
                 );
 
-                LabelInfo labelInfo = recognize(cropResizeImageBitmap);
-                if(!labelInfo.labelName.equals("")){
-                    r.setLabelId(labelInfo.labelId);
-                    r.setLabelName(labelInfo.labelName);
-                    r.setLabelScore(labelInfo.labelScore);
-                    recognizeBatchResult.add(r);
+                try {
+                    LabelInfo labelInfo = recognize(cropResizeImageBitmap);
+                    if(!labelInfo.labelName.equals("")){
+                        r.setLabelId(labelInfo.labelId);
+                        r.setLabelName(labelInfo.labelName);
+                        r.setLabelScore(labelInfo.labelScore);
+                        recognizeBatchResult.add(r);
+                    }
+                    Log.i("tfliteSupport", this.getModelFile() +" recognize success: "+labelInfo.labelName);
+                } catch (Exception e) {
+                    Log.e("tfliteSupport", "recognize fail "+e.getMessage());
                 }
+
             }
         }
 

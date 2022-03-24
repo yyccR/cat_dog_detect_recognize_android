@@ -17,6 +17,7 @@ import androidx.camera.core.ImageProxy;
 import androidx.camera.view.PreviewView;
 
 import com.example.cat_dog_recognize_lite.detector.Yolov5TFLiteDetector;
+import com.example.cat_dog_recognize_lite.recognizer.XceptionRecognizer;
 import com.example.cat_dog_recognize_lite.utils.ImageProcess;
 import com.example.cat_dog_recognize_lite.utils.Recognition;
 
@@ -47,6 +48,7 @@ public class FullScreenAnalyse implements ImageAnalysis.Analyzer {
     private TextView frameSizeTextView;
     ImageProcess imageProcess;
     private Yolov5TFLiteDetector yolov5TFLiteDetector;
+    private XceptionRecognizer xceptionRecognizer;
 
     public FullScreenAnalyse(Context context,
                              PreviewView previewView,
@@ -54,7 +56,8 @@ public class FullScreenAnalyse implements ImageAnalysis.Analyzer {
                              int rotation,
                              TextView inferenceTimeTextView,
                              TextView frameSizeTextView,
-                             Yolov5TFLiteDetector yolov5TFLiteDetector) {
+                             Yolov5TFLiteDetector yolov5TFLiteDetector,
+                             XceptionRecognizer xceptionRecognize) {
         this.previewView = previewView;
         this.boxLabelCanvas = boxLabelCanvas;
         this.rotation = rotation;
@@ -62,6 +65,7 @@ public class FullScreenAnalyse implements ImageAnalysis.Analyzer {
         this.frameSizeTextView = frameSizeTextView;
         this.imageProcess = new ImageProcess();
         this.yolov5TFLiteDetector = yolov5TFLiteDetector;
+        this.xceptionRecognizer = xceptionRecognize;
     }
 
     @Override
@@ -133,7 +137,8 @@ public class FullScreenAnalyse implements ImageAnalysis.Analyzer {
             Matrix modelToPreviewTransform = new Matrix();
             previewToModelTransform.invert(modelToPreviewTransform);
 
-            ArrayList<Recognition> recognitions = yolov5TFLiteDetector.detect(modelInputBitmap);
+            ArrayList<Recognition> detections = yolov5TFLiteDetector.detect(modelInputBitmap);
+            ArrayList<Recognition> recognitions = xceptionRecognizer.recognizeBatch(detections, modelInputBitmap);
 
             Bitmap emptyCropSizeBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
             Canvas cropCanvas = new Canvas(emptyCropSizeBitmap);

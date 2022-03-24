@@ -164,7 +164,8 @@ public class MainActivity extends AppCompatActivity {
                             rotation,
                             inferenceTimeTextView,
                             frameSizeTextView,
-                            yolov5TFLiteDetector);
+                            yolov5TFLiteDetector,
+                            xceptionRecognizer);
                     cameraProcess.startCamera(MainActivity.this, fullScreenAnalyse, cameraPreviewMatch);
                 }else{
                     cameraPreviewMatch.removeAllViews();
@@ -201,7 +202,8 @@ public class MainActivity extends AppCompatActivity {
                             rotation,
                             inferenceTimeTextView,
                             frameSizeTextView,
-                            yolov5TFLiteDetector);
+                            yolov5TFLiteDetector,
+                            xceptionRecognizer);
                     cameraProcess.startCamera(MainActivity.this, fullScreenAnalyse, cameraPreviewMatch);
                 }else{
                     cameraPreviewMatch.removeAllViews();
@@ -239,7 +241,8 @@ public class MainActivity extends AppCompatActivity {
                             rotation,
                             inferenceTimeTextView,
                             frameSizeTextView,
-                            yolov5TFLiteDetector);
+                            yolov5TFLiteDetector,
+                            xceptionRecognizer);
                     cameraProcess.startCamera(MainActivity.this, fullScreenAnalyse, cameraPreviewMatch);
 
                 } else {
