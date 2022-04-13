@@ -47,15 +47,15 @@ public class XceptionRecognizer {
         }
     }
 
-    private final Size INPNUT_SIZE = new Size(224, 224);
+    private final Size INPNUT_SIZE = new Size(320, 320);
     private final int[] OUTPUT_SIZE = new int[]{1, 200};
     private Boolean IS_INT8 = false;
     private final float THRESHOLD = 0.25f;
     ImageProcess imageProcess = new ImageProcess();
 
     private final String LABEL_FILE = "cat_dog_breeds_cn.txt";
-    private String FP16_MODEL_FILE = "cat_dog_classify_xception_0322_fp16.tflite";
-    private String INT8_MODEL_FILE = "cat_dog_classify_xception_0322_int8.tflite";
+    private String FP16_MODEL_FILE = "cat_dog_classify_xception_0407_fp16.tflite";
+    private String INT8_MODEL_FILE = "cat_dog_classify_xception_0407_int8.tflite";
     private String MODEL_FILE;
 
     // 如果替换自己的int8 quant模型, 需要修改input/output Tensor的索引
